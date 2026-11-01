@@ -115,6 +115,8 @@ def _model_scenes_file():
 def test_registry_scenes_come_from_the_model_scenes_file():
     data = _model_scenes_file()
     for sku, capabilities in GOVEE_LIGHT_CAPABILITIES.items():
+        if capabilities.scene_library:
+            continue  # Fork: scenes come from full_scenes.json.
         set_id = data["models"].get(sku)
         expected = (
             {name: bytes([code]) for name, code in data["sets"][set_id].items()}
@@ -189,6 +191,8 @@ def test_govee_variant_letter_stays_next_to_its_kept_sibling():
 def test_no_model_lists_the_same_scene_code_twice():
     # Two names for one code would mean a variant was split in two.
     for sku, capabilities in GOVEE_LIGHT_CAPABILITIES.items():
+        if capabilities.scene_library:
+            continue  # Fork: library scenes are keyed by name only.
         codes = list(capabilities.scenes.values())
         assert len(codes) == len(set(codes)), sku
 
