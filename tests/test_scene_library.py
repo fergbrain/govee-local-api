@@ -27,6 +27,24 @@ class TestSceneLibraryRegistry(unittest.TestCase):
     def test_h805d_has_nine_segments(self):
         self.assertEqual(GOVEE_LIGHT_CAPABILITIES["H805D"].segments_count, 9)
 
+    def test_h805d_names_have_category_and_title_case(self):
+        names = GOVEE_LIGHT_CAPABILITIES["H805D"].available_scenes
+        self.assertEqual(names[0], "[Natural] Sunrise")
+        self.assertIn("[Life] White Light", names)
+        for name in names:
+            self.assertTrue(name.startswith("["), name)
+            self.assertNotIn("_", name)
+
+    def test_h805d_names_keep_the_app_order(self):
+        names = GOVEE_LIGHT_CAPABILITIES["H805D"].available_scenes
+        categories = []
+        for name in names:
+            category = name[1 : name.index("]")]
+            if not categories or categories[-1] != category:
+                categories.append(category)
+        self.assertEqual(categories[:4], ["Natural", "Festival", "Life", "Emotion"])
+        self.assertEqual(len(categories), len(set(categories)))
+
     def test_other_models_have_no_library(self):
         self.assertEqual(GOVEE_LIGHT_CAPABILITIES["H805C"].scene_library, {})
 
@@ -50,6 +68,12 @@ class TestSetSceneWithLibrary(unittest.TestCase):
         self.assertIsInstance(message, SceneCodeMessage)
         expected = SceneCodeMessage(code, param)
         self.assertEqual(bytes(message), bytes(expected))
+
+    def test_display_name_is_found_case_insensitively(self):
+        controller, device = self._controller_and_device("H805D")
+        asyncio.run(controller.set_scene(device, "[Life] White Light"))
+        message = controller._send_message.call_args.args[0]
+        self.assertEqual(bytes(message), bytes(SceneCodeMessage(40)))
 
     def test_firmware_only_model_still_uses_scene_messages(self):
         controller, device = self._controller_and_device("H805C")
